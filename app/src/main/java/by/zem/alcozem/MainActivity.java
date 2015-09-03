@@ -1,10 +1,13 @@
 package by.zem.alcozem;
 
+import android.content.pm.ActivityInfo;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
+import android.view.WindowManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -14,7 +17,21 @@ public class MainActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.hide();
         setContentView(new GameView(this));
-        //    setContentView(R.layout.activity_main);
+       // setContentView(R.layout.activity_main);
+
+
+        // если хотим, чтобы приложение постоянно имело портретную ориентацию
+        // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+        // если хотим, чтобы приложение было полноэкранным
+        // getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        // и без заголовка
+        // requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // setContentView(new GameView(this));
+
+
     }
 
     @Override

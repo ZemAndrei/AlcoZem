@@ -9,83 +9,163 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by ZEM on 03.09.2015.
  */
-public class GameView extends SurfaceView {
-    /**Загружаем спрайт*/
-    private Bitmap bmp;
-
-    /**Поле рисования*/
-    private SurfaceHolder holder;
-
-    /**объект класса GameView*/
+public class GameView extends SurfaceView
+{
+    /**Объект класса GameManager*/
     private GameManager gameLoopThread;
 
-    /**Объект класса Sprite*/
-    private Sprite sprite;
+    /**Список спрайтов*/
+    private List<Sprite> sprites = new ArrayList<Sprite>();
 
+    /**Определитель клика*/
+    private long lastClick;
 
-    /**Обработка косания по экрану*/
-    public boolean onTouchEvent(MotionEvent event) {
+    /**Переменная запускающая поток рисования*/
+    private boolean running = false;
 
+    public class GameManager extends Thread
+    {
+        /**Объект класса*/
+        private GameView view;
 
+        /**Конструктор класса*/
+        public GameManager(GameView view)
+        {
+            this.view = view;
+        }
 
+        /**Задание состояния потока*/
+        public void setRunning(boolean run)
+        {
+            running = run;
+        }
 
-
-        return super.onTouchEvent(event);
+        /** Действия, выполняемые в потоке */
+        public void run()
+        {
+            while (running)
+            {
+                Canvas canvas = null;
+                try
+                {
+                    // подготовка Canvas-а
+                    canvas = view.getHolder().lockCanvas();
+                    synchronized (view.getHolder())
+                    {
+                        // собственно рисование
+                        onDraw(canvas);
+                    }
+                }
+                catch (Exception e) { }
+                finally
+                {
+                    if (canvas != null)
+                    {
+                        view.getHolder().unlockCanvasAndPost(canvas);
+                    }
+                }
+            }
+        }
     }
 
+    //-----------------------------------------Конец класса GameManager-------------------------------------
 
-
-    /**Конструктор*/
+    /**Конструктор класса*/
     public GameView(Context context)
     {
         super(context);
+
         gameLoopThread = new GameManager(this);
-        holder = getHolder();
 
           /*Рисуем все наши объекты и все все все*/
-        holder.addCallback(new SurfaceHolder.Callback()
+        getHolder().addCallback(new SurfaceHolder.Callback()
         {
             /*** Уничтожение области рисования */
             public void surfaceDestroyed(SurfaceHolder holder)
             {
                 boolean retry = true;
                 gameLoopThread.setRunning(false);
+
                 while (retry)
                 {
                     try
                     {
+                        // ожидание завершение потока
                         gameLoopThread.join();
                         retry = false;
-                    } catch (InterruptedException e)
-                    {
                     }
+                    catch (InterruptedException e) { }
                 }
             }
 
             /** Создание области рисования */
             public void surfaceCreated(SurfaceHolder holder)
             {
+                createSprites();
                 gameLoopThread.setRunning(true);
                 gameLoopThread.start();
             }
 
             /** Изменение области рисования */
-            public void surfaceChanged(SurfaceHolder holder, int format,
-                                       int width, int height)
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
             {
             }
         });
-        bmp = BitmapFactory.decodeResource(getResources(), R.drawable.zem1);
-        sprite = new Sprite(this,bmp);
+    }
+
+    /**Создание всех спрайтов*/
+    private void createSprites()
+    {
+        sprites.add(createSprite(R.drawable.zem1));
+        sprites.add(createSprite(R.drawable.zem2));
+
+    }
+
+    /**Создаем спрайт на сцене*/
+    private Sprite createSprite(int resouce)
+    {
+        Bitmap bmp = BitmapFactory.decodeResource(getResources(), resouce);
+        return new Sprite(this, bmp);
     }
 
     /**Функция рисующая все спрайты и фон*/
     protected void onDraw(Canvas canvas)
     {
         canvas.drawColor(Color.BLACK);
-        sprite.onDraw(canvas);
+        for (Sprite sprite : sprites)
+        {
+            sprite.onDraw(canvas);
+        }
+    }
+
+    /**Обработка косания по экрану*/
+    public boolean onTouchEvent(MotionEvent event)
+    {
+        if (System.currentTimeMillis() - lastClick > 300)
+        {
+            lastClick = System.currentTimeMillis();
+            float x = event.getX();
+            float y = event.getY();
+
+            synchronized (getHolder())
+            {
+                for (int i = sprites.size() - 1; i >= 0; i--)
+                {
+                    Sprite sprite = sprites.get(i);
+                    if (sprite.isCollition(x, y))
+                    {
+                        sprites.remove(sprite);
+                        break;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
