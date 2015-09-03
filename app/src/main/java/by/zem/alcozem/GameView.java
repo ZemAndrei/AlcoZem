@@ -29,7 +29,7 @@ public class GameView extends SurfaceView {
     /**Обработка косания по экрану*/
     public boolean onTouchEvent(MotionEvent event) {
 
-        
+
 
 
 
